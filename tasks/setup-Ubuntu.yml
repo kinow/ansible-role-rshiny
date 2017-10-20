@@ -1,0 +1,36 @@
+---
+- name: repository | add public key
+  apt_key:
+    id: E084DAB9
+    keyserver: keyserver.ubuntu.com
+    state: present
+
+- name: repository | add cran-r
+  apt_repository:
+    repo: "{{ item.type }} {{ item.url }}"
+    state: present
+    update_cache: true
+  with_items: "{{ r_repository }}"
+
+- name: packages | install
+  apt: >
+    pkg={{item}}
+    state=installed
+    update-cache=yes
+  with_items:
+    - libcurl4-gnutls-dev
+    - libxml2-dev
+    - gdebi-core
+    - r-base
+    - r-base-dev
+
+- name: download | shiny
+  command: /usr/bin/wget "{{ shiny_installer }}" -O shiny.deb
+  args:
+    chdir: "~"
+    creates: ~/shiny.deb
+  register: get_shiny
+
+- name: execute | gdebi
+  command: /usr/bin/gdebi -n ~/shiny.deb
+  when: get_shiny.changed
